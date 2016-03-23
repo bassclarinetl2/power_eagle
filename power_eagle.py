@@ -46,7 +46,7 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=120)
 
 def setup_platform(hass,config,add_devices,discovery_info=None):
 	"""Setup Eagle sensor"""
-	from eagle_http import * #import eagle-http-api
+	from eagle_http_api import * #import eagle-http-api
 #	from currency_names import * #Grab curency dict from external file
 	from datetime import *
 
@@ -60,12 +60,12 @@ def setup_platform(hass,config,add_devices,discovery_info=None):
 			"It's not off is it?")
 		return False
 	
-	if CONF_FORMAT not JSON:
+	if CONF_FORMAT != 'JSON':
 		gw.json = False
 	else:
 		gw.json = True
 		
-	if CONF_NOISY not 'False':
+	if CONF_NOISY != 'False':
 		gw.noisy = True
 	else:
 		gw.noisy = False
@@ -78,8 +78,8 @@ def setup_platform(hass,config,add_devices,discovery_info=None):
 				_LOGGER.error ('Data point:"%s" does not exist',variable)
 			else:
 				dev.append(PowerEagleSensor(variable,unit))
-		except KeyError:
-			pass
+	except KeyError:
+		pass
 
 		add_devices(dev)
 
