@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #power_eagle.py
-#Requires https://github.com/bassclarinetl2/Eagle-Http-API (Forked and modified for Py3 from https://github.com/rainforestautomation/Eagle-Http-API)
-
+#Requires https://github.com/bassclarinetl2/eagle_http_api
+#(Forked and modified for Py3 (changing print statements) from https://github.com/rainforestautomation/Eagle-Http-API)
+#
 
 DOMAIN = "power_eagle"
 
@@ -13,12 +14,13 @@ currency_names ={840:'US Dollars',124:'Canadian Dollars',36:'Australian Dollars'
 
 import logging
 
-from homeassistant.const import CONF_ACCESS_TOKEN, CONF_USERNAME, CONF_PASSWORD
-from homeassistant.helpers.entity import entity
+from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 from re import *
+from eagle_http_api import * #import eagle-http-api
+from datetime import *
 
-REQUIREMENTS = ['https://github.com/bassclarinetl2/Eagle-Http-API/archive/master.zip']
+REQUIREMENTS = ['https://github.com/bassclarinetl2/eagle-http-api/archive/v0.0.1.zip']
 _LOGGER = logging.getLogger(__name__)
 SENSOR_TYPES ={
 	'gateway_zigbee_mac' : ['Eagle Zigbee Mac',None],
@@ -46,9 +48,7 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=120)
 
 def setup_platform(hass,config,add_devices,discovery_info=None):
 	"""Setup Eagle sensor"""
-	from eagle_http_api import * #import eagle-http-api
-#	from currency_names import * #Grab curency dict from external file
-	from datetime import *
+	
 
 
 	gw = eagle_http(CONF_USERNAME,CONF_PASSWORD,CONF_ACCESS_TOKEN) #define username, passwd, and cloud id (access token) for rainforestcloud.com (aka the free Rainforest cloud)
@@ -112,7 +112,7 @@ class PowerEagleSensor(Entity):
 		@property
 		def name(self):
 		    """return name of the sensor"""
-		   return self._name
+		return self._name
 		@property 
 		def state(self):
 			"""return state of sensor"""
@@ -125,34 +125,34 @@ class PowerEagleSensor(Entity):
 
 
 		def update(self):
-		if CONF_MAC not None: 
-			get_network_info(CONF_MAC)
-			list_network(CONF_MAC)
-			get_network_status(CONF_MAC)
-			get_instantaneous_demand(CONF_MAC)
-			get_price(CONF_MAC)
-			get_message(CONF_MAC)
-#			confirm_message(CONF_MAC)
-			get_current_summation(CONF_MAC)
-			get_history_data(CONF_MAC)
-#			set_schedule(CONF_MAC)
-			get_schedule(CONF_MAC)
-			get_demand_peaks(CONF_MAC)
-#			reboot(CONF_MAC)
-		else:
-			get_network_info()
-			list_network()
-			get_network_status()
-			get_instantaneous_demand()
-			get_price()
-			get_message()
-#			confirm_message()
-			get_current_summation()
-			get_history_data()
-#			set_schedule()
-			get_schedule()
-			get_demand_peaks()
-#			reboot()
+			if CONF_MAC != None: 
+				get_network_info(CONF_MAC)
+				list_network(CONF_MAC)
+				get_network_status(CONF_MAC)
+				get_instantaneous_demand(CONF_MAC)
+				get_price(CONF_MAC)
+				get_message(CONF_MAC)
+				confirm_message(CONF_MAC)
+				get_current_summation(CONF_MAC)
+				get_history_data(CONF_MAC)
+				set_schedule(CONF_MAC)
+				get_schedule(CONF_MAC)
+				get_demand_peaks(CONF_MAC)
+				reboot(CONF_MAC)
+			else:
+				get_network_info()
+				list_network()
+				get_network_status()
+				get_instantaneous_demand()
+				get_price()
+				get_message()
+				confirm_message()
+				get_current_summation()
+				get_history_data()
+				set_schedule()
+				get_schedule()
+				get_demand_peaks()
+				reboot()
 
 		if self.type == 'gateway_zigbee_mac':
 			self._state = Mac(str(int(gw.NetworkInfo.DeviceMacId,16))[2:])
@@ -185,12 +185,21 @@ class PowerEagleSensor(Entity):
 		elif self.type == 'utility_billing_tier':
 			self._state = gw.PriceCluster.Tier
 		elif self.type == 'total_instaenous_cost':
-			self._unit = currency[currency_names[int(gw.PriceCluster.Currency,16)]
-			self._state = (float.fromhex(gw.PriceCluster.Price)/(10 ** (int(gw.PriceCluster.TrailingDigits,16))))*((int(gw.InstantaneousDemand.Demand,16) * int(gw.InstantaneousDemand.Multiplier,16))/ int(gw.InstantaneousDemand.Divisor,16) #Convert hex values from GW and determine kwh ((demand*multiplier)/divisor)))
+			self._unit = currency[currency_names[int(gw.PriceCluster.Currency,16)]]
+
+			instantaenous_cst = price_form * actual_demand
+			actual_demand = (demand * multiplier) / divisor
+			demand = int(gw.InstantaneousDemand.Demand,16)
+			multiplier = int(gw.InstantaneousDemand.Multiplier,16)
+			factor = 10 ** (int(gw.PriceCluster.TrailingDigits,16))
+			price = float.fromhex(gw.PriceCluster.Price)
+			divisor = int(gw.InstantaneousDemand.Divisor,16)
+			price_form = price * factor
+
+			self._state = instantaenous_cst
 
 
 		
-
 
 ##############################################################			
 """
